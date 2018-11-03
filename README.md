@@ -5,7 +5,6 @@ https://github.com/zendesk/curly
 ```
 gem 'curly-templates'
 rails g curly:install
-
 ```
 
 ```ruby
@@ -166,7 +165,66 @@ describe Posts::ShowPresenter, type: :presenter do
   end
 end
 
+# app/presenters/posts/show_presenter.rb
+class Posts::ShowPresenter < Curly::Presenter
+  presents :post
+  def title
+    @post.title
+  end
+  def author
+    link_to(@post.author.name, @post.author, rel: "author")
+  end
+  def description
+    Markdown.new(@post.description).to_html.html_safe
+  end
+  def comments
+    render 'comment', collection: @post.comments
+  end
+  def comment_form
+    if @post.comments_allowed?
+      render 'comment_form', post: @post
+    else
+      content_tag(:p, "Comments are disabled for this post")
+    end
+  end
+end
 
+class Posts::ShowPresenter < Curly::Presenter
+  presents :post
+  def cache_key
+    [@post, signed_in?]
+  end
+end
+
+class Posts::ShowPresenter < Curly::Presenter
+  def cache_duration
+    30.minutes
+  end
+end
+
+class Posts::ShowPresenter < Curly::Presenter
+  def cache_options
+    { compress: true, namespace: "my-app" }
+  end
+end
+
+class Posts::ShowPresenter < Curly::Presenter
+  version 3
+  def cache_key
+  end
+end
+
+class Posts::ShowPresenter < Curly::Presenter
+  version 3
+  depends_on 'posts/comment'
+  def cache_key
+  end
+end
+class Posts::CommentPresenter < Curly::Presenter
+  version 4
+  def cache_key
+  end
+end
 
 ```
 
@@ -215,5 +273,8 @@ This is {{escaped}}.
 <div class="comments">
 {{comments}}
 </div>
+
+<% cache([@post, signed_in?]) do %>
+<% end %>
 
 ```
